@@ -1,33 +1,28 @@
 import express from "express";
 import Campaign from "../models/Campaign.js";
 import SurveyResponse from "../models/SurveyResponse.js";
+import mongoose from "mongoose";
 
 const router = express.Router();
 
-// [GET] Listare campanii cu număr răspunsuri per campanie
+// [GET] Listare campanii
 router.get("/", async (req, res) => {
   try {
-    // Preiau toate campaniile (sau doar active, dacă dorești)
     const campaigns = await Campaign.find().sort({ createdAt: -1 });
-
-    // Agregare: număr răspunsuri pentru fiecare campanie
-    // Mapăm fiecare campanie cu răspunsurile aferente
     const campaignsWithCounts = await Promise.all(
       campaigns.map(async (camp) => {
-        const count = await SurveyResponse.countDocuments({
-          campanie: camp._id,
-        });
+        const count = await SurveyResponse.countDocuments({ campanie: camp._id });
         return {
           _id: camp._id,
           name: camp.name,
           description: camp.description,
           createdAt: camp.createdAt,
           active: camp.active,
+          color: camp.color,
           responsesCount: count,
         };
       })
     );
-
     res.json(campaignsWithCounts);
   } catch (err) {
     console.error("Eroare la obținerea campaniilor:", err);
@@ -35,32 +30,27 @@ router.get("/", async (req, res) => {
   }
 });
 
-// [POST] Creare campanie nouă
+// [POST] Creare campanie
 router.post("/", async (req, res) => {
   try {
-    const { name, description, active } = req.body;
-
+    const { name, description, active, color } = req.body;
     if (!name || name.trim() === "") {
-      return res
-        .status(400)
-        .json({ error: "Numele campaniei este obligatoriu" });
+      return res.status(400).json({ error: "Numele campaniei este obligatoriu" });
     }
 
     const existing = await Campaign.findOne({ name: name.trim() });
     if (existing) {
-      return res
-        .status(400)
-        .json({ error: "O campanie cu acest nume există deja" });
+      return res.status(400).json({ error: "O campanie cu acest nume există deja" });
     }
 
     const campaign = new Campaign({
       name: name.trim(),
       description: description || "",
       active: active !== undefined ? active : true,
+      color,
     });
 
     await campaign.save();
-
     res.status(201).json(campaign);
   } catch (err) {
     console.error("Eroare la crearea campaniei:", err);
@@ -68,27 +58,26 @@ router.post("/", async (req, res) => {
   }
 });
 
-// [PATCH] Editare campanie existentă după ID
+// [PATCH] Editare campanie
 router.patch("/:id", async (req, res) => {
   try {
     const { name, description, active, color } = req.body;
 
-    if (name && name.trim() === "") {
-      return res
-        .status(400)
-        .json({ error: "Numele campaniei nu poate fi gol" });
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ error: "ID invalid" });
     }
 
-    // Verifică dacă există altă campanie cu același nume
+    if (name && name.trim() === "") {
+      return res.status(400).json({ error: "Numele campaniei nu poate fi gol" });
+    }
+
     if (name) {
       const existing = await Campaign.findOne({
         name: name.trim(),
         _id: { $ne: req.params.id },
       });
       if (existing) {
-        return res
-          .status(400)
-          .json({ error: "O altă campanie cu acest nume există deja" });
+        return res.status(400).json({ error: "O altă campanie cu acest nume există deja" });
       }
     }
 
@@ -114,18 +103,34 @@ router.patch("/:id", async (req, res) => {
   }
 });
 
-// routes/campaigns.js
-router.get("/:name", async (req, res) => {
-  console.log("Received campaign name:", req.params.name);
+// [GET] Campanie după ID
+router.get("/:id", async (req, res) => {
+  if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+    return res.status(400).json({ error: "ID invalid" });
+  }
+
   try {
-    const campanie = await Campaign.findOne({ name: req.params.name });
+    const campanie = await Campaign.findById(req.params.id);
     if (!campanie) {
-      console.log("Campanie negăsită");
       return res.status(404).json({ error: "Campania nu a fost găsită" });
     }
     res.json(campanie);
   } catch (err) {
-    console.error(err);
+    console.error("Eroare la obținerea campaniei după ID:", err);
+    res.status(500).json({ error: "Eroare server" });
+  }
+});
+
+// [GET] Campanie după nume
+router.get("/name/:name", async (req, res) => {
+  try {
+    const campanie = await Campaign.findOne({ name: req.params.name });
+    if (!campanie) {
+      return res.status(404).json({ error: "Campania nu a fost găsită" });
+    }
+    res.json(campanie);
+  } catch (err) {
+    console.error("Eroare la obținerea campaniei după nume:", err);
     res.status(500).json({ error: "Eroare server" });
   }
 });

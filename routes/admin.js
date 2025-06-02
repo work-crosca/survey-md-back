@@ -16,7 +16,6 @@ router.post("/login", async (req, res) => {
 
   const token = createToken(user);
 
-  // 🔥 ADĂUGĂ ACEST BLOC
   res.setHeader("Access-Control-Allow-Origin", "https://survey.getcookie.xyz");
   res.setHeader("Access-Control-Allow-Credentials", "true");
 
@@ -24,7 +23,7 @@ router.post("/login", async (req, res) => {
     .cookie("token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "none", // important pentru frontend pe alt domeniu
+      sameSite: "none", 
       maxAge: 7 * 24 * 60 * 60 * 1000,
     })
     .json({ success: true });
