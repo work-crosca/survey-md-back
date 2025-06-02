@@ -24,19 +24,20 @@ router.post("/submit", async (req, res) => {
 // [GET] Export răspunsuri
 router.get("/export", async (req, res) => {
    try {
-     const filters = {};
-     if (req.query.lang) filters.lang = req.query.lang;
-     if (req.query.campaign) filters.campaign = req.query.campaign;
-     if (req.query.dateStart) filters.completedAt = { $gte: new Date(req.query.dateStart) };
-     if (req.query.dateEnd) {
-       filters.completedAt = filters.completedAt || {};
-       filters.completedAt.$lte = new Date(req.query.dateEnd);
-     }
+     const { lang, campaign, token, dateStart, dateEnd, format } = req.query;
  
-     const responses = await SurveyResponse.find(filters);
+     const filter = {};
+     if (lang) filter.lang = lang;
+     if (campaign) filter.campanie = campaign;
+     if (token) filter.token = { $regex: token, $options: "i" };
+     if (dateStart || dateEnd) filter.completedAt = {};
+     if (dateStart) filter.completedAt.$gte = new Date(dateStart);
+     if (dateEnd) filter.completedAt.$lte = new Date(dateEnd);
  
-     if (req.query.format === "csv") {
-       const fields = ["token", "lang", "completedAt", "userAgent", "answers", "campaign"];
+     const responses = await SurveyResponse.find(filter);
+ 
+     if (format === "csv") {
+       const fields = ["token", "lang", "completedAt", "userAgent", "answers"];
        const parser = new Parser({ fields });
        const csv = parser.parse(responses);
  
