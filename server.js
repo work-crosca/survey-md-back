@@ -7,17 +7,22 @@ import adminRoutes from "./routes/admin.js";
 import campaignsRoutes from "./routes/campaigns.js";
 import cookieParser from "cookie-parser";
 dotenv.config();
-console.log("JWT_SECRET:", process.env.JWT_SECRET);
-const allowedOrigins = ["https://survey.getcookie.xyz/"]; // sau domeniul tău frontend
 
 const app = express();
 
-app.use(
-  cors({
-    origin: allowedOrigins,
-    credentials: true, // 🔐 permite cookie-urile
-  })
-);
+const allowedOrigins = ["https://survey.getcookie.xyz", "http://localhost:5173"];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true); // permite cererile fără origin (ex: Postman)
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Originul nu este permis de CORS"));
+    }
+  },
+  credentials: true,
+}));
 app.use(cookieParser());
 app.use(express.json());
 
