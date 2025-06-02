@@ -8,7 +8,7 @@ import campaignsRoutes from "./routes/campaigns.js";
 import cookieParser from "cookie-parser";
 dotenv.config();
 console.log("JWT_SECRET:", process.env.JWT_SECRET);
-const allowedOrigins = ["http://localhost:5173"]; // sau domeniul tău frontend
+const allowedOrigins = ["https://survey.getcookie.xyz/"]; // sau domeniul tău frontend
 
 const app = express();
 
