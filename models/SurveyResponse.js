@@ -6,6 +6,7 @@ const SurveyResponseSchema = new mongoose.Schema({
   answers: Object,
   userAgent: String,
   completedAt: Date,
+  campanie: { type: String, default: "default" }, 
 });
 
 export default mongoose.model("SurveyResponse", SurveyResponseSchema);
