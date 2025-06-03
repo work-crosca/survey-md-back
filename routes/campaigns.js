@@ -1,7 +1,8 @@
 import express from "express";
+import mongoose from "mongoose";
 import Campaign from "../models/Campaign.js";
 import SurveyResponse from "../models/SurveyResponse.js";
-import mongoose from "mongoose";
+import allQuestions from "../utils/questions.js";
 
 const router = express.Router();
 
@@ -20,6 +21,7 @@ router.get("/", async (req, res) => {
           active: camp.active,
           color: camp.color,
           responsesCount: count,
+          questions: camp.questions || [],
         };
       })
     );
@@ -33,7 +35,7 @@ router.get("/", async (req, res) => {
 // [POST] Creare campanie
 router.post("/", async (req, res) => {
   try {
-    const { name, description, active, color } = req.body;
+    const { name, description, active, color, questions } = req.body;
     if (!name || name.trim() === "") {
       return res.status(400).json({ error: "Numele campaniei este obligatoriu" });
     }
@@ -48,6 +50,7 @@ router.post("/", async (req, res) => {
       description: description || "",
       active: active !== undefined ? active : true,
       color,
+      questions: Array.isArray(questions) ? questions : [],
     });
 
     await campaign.save();
@@ -61,7 +64,7 @@ router.post("/", async (req, res) => {
 // [PATCH] Editare campanie
 router.patch("/:id", async (req, res) => {
   try {
-    const { name, description, active, color } = req.body;
+    const { name, description, active, color, questions } = req.body;
 
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
       return res.status(400).json({ error: "ID invalid" });
@@ -88,6 +91,7 @@ router.patch("/:id", async (req, res) => {
         ...(description !== undefined && { description }),
         ...(active !== undefined && { active }),
         ...(color !== undefined && { color }),
+        ...(questions !== undefined && { questions }),
       },
       { new: true, runValidators: true }
     );
@@ -103,7 +107,6 @@ router.patch("/:id", async (req, res) => {
   }
 });
 
-
 // [GET] Campanie după nume
 router.get("/name/:name", async (req, res) => {
   try {
@@ -117,6 +120,7 @@ router.get("/name/:name", async (req, res) => {
     res.status(500).json({ error: "Eroare server" });
   }
 });
+
 // [GET] Campanie după ID
 router.get("/:id", async (req, res) => {
   if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
@@ -131,6 +135,29 @@ router.get("/:id", async (req, res) => {
     res.json(campanie);
   } catch (err) {
     console.error("Eroare la obținerea campaniei după ID:", err);
+    res.status(500).json({ error: "Eroare server" });
+  }
+});
+
+// [GET] Întrebările campaniei (cu text complet)
+router.get("/:id/questions", async (req, res) => {
+  if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+    return res.status(400).json({ error: "ID invalid" });
+  }
+
+  try {
+    const campanie = await Campaign.findById(req.params.id);
+    if (!campanie) {
+      return res.status(404).json({ error: "Campania nu a fost găsită" });
+    }
+
+    const selectedQuestions = allQuestions.filter((q) =>
+      campanie.questions.includes(q.id)
+    );
+
+    res.json(selectedQuestions);
+  } catch (err) {
+    console.error("Eroare la obținerea întrebărilor campaniei:", err);
     res.status(500).json({ error: "Eroare server" });
   }
 });

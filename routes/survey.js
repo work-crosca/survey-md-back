@@ -2,6 +2,7 @@ import express from "express";
 import SurveyResponse from "../models/SurveyResponse.js";
 import Campaign from "../models/Campaign.js";
 import { Parser } from "json2csv";
+import allQuestions from "../utils/questions.js";
 
 const router = express.Router();
 
@@ -37,11 +38,13 @@ router.get("/export", async (req, res) => {
     const { lang, campaign, token, dateStart, dateEnd, format } = req.query;
 
     const filter = {};
+    let campaignDoc = null;
+
     if (lang) filter.lang = lang;
     if (campaign) {
-      const found = await Campaign.findOne({ name: campaign });
-      if (found) {
-        filter.campanie = found._id;
+      campaignDoc = await Campaign.findOne({ name: campaign });
+      if (campaignDoc) {
+        filter.campanie = campaignDoc._id;
       } else {
         return res.json([]);
       }
@@ -54,20 +57,26 @@ router.get("/export", async (req, res) => {
     const responses = await SurveyResponse.find(filter).populate("campanie", "name color");
 
     if (format === "csv") {
-      // câmpuri statice
       const baseFields = ["token", "lang", "completedAt", "userAgent", "campanie.name", "campanie.color"];
+      let dynamicFields = [];
 
-      // câmpuri dinamice din answers
-      const allKeys = new Set();
-      responses.forEach((r) => {
-        if (r.answers && typeof r.answers === "object") {
-          Object.keys(r.answers).forEach((key) => allKeys.add(`answers.${key}`));
-        }
-      });
+      if (campaignDoc?.questions?.length) {
+        dynamicFields = campaignDoc.questions.map((id) => {
+          const q = allQuestions.find((q) => q.id === id);
+          return q ? `answers.${id}` : null;
+        }).filter(Boolean);
+      } else {
+        // fallback dacă nu e campanie sau nu are questions
+        const allKeys = new Set();
+        responses.forEach((r) => {
+          if (r.answers && typeof r.answers === "object") {
+            Object.keys(r.answers).forEach((key) => allKeys.add(`answers.${key}`));
+          }
+        });
+        dynamicFields = Array.from(allKeys);
+      }
 
-      const dynamicFields = Array.from(allKeys);
       const fields = [...baseFields, ...dynamicFields];
-
       const parser = new Parser({ fields });
       const csv = parser.parse(responses);
 
