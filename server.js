@@ -5,6 +5,7 @@ import dotenv from "dotenv";
 import surveyRoutes from "./routes/survey.js";
 import adminRoutes from "./routes/admin.js";
 import campaignsRoutes from "./routes/campaigns.js";
+import questionsRoutes from "./routes/questions.js";
 import cookieParser from "cookie-parser";
 dotenv.config();
 
@@ -25,12 +26,12 @@ app.use(cors({
 }));
 app.use(cookieParser());
 app.use(express.json());
-
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => console.log("MongoDB connected"))
   .catch((err) => console.error("MongoDB connection error:", err));
 
+app.use("/api/questions", questionsRoutes);
 app.use("/api/campaigns", campaignsRoutes);
 app.use("/api/survey", surveyRoutes);
 app.use("/api/admin", adminRoutes);
