@@ -15,7 +15,6 @@ router.post("/submit", async (req, res) => {
       userAgent: req.headers["user-agent"],
     };
 
-    // Transformă campanie din nume în ObjectId
     if (data.campanie && typeof data.campanie === "string") {
       const found = await Campaign.findOne({ name: data.campanie });
       if (!found) {
@@ -54,7 +53,17 @@ router.get("/export", async (req, res) => {
     if (dateStart) filter.completedAt.$gte = new Date(dateStart);
     if (dateEnd) filter.completedAt.$lte = new Date(dateEnd);
 
-    const responses = await SurveyResponse.find(filter).populate("campanie", "name color").lean();
+    const rawResponses = await SurveyResponse.find(filter)
+      .populate("campanie", "name color")
+      .lean();
+
+    // 🧠 Normalizează answers dacă e array
+    const responses = rawResponses.map((r) => {
+      if (Array.isArray(r.answers) && r.answers.length === 1 && typeof r.answers[0] === "object") {
+        r.answers = r.answers[0];
+      }
+      return r;
+    });
 
     if (format === "csv") {
       const baseFields = ["token", "lang", "completedAt", "userAgent", "campanie", "color"];
@@ -65,10 +74,9 @@ router.get("/export", async (req, res) => {
         : [];
 
       if (!relevantQuestions.length) {
-        // fallback – detectăm toate întrebările folosite
         const usedIds = new Set();
         responses.forEach((r) => {
-          if (r.answers) {
+          if (r.answers && typeof r.answers === "object") {
             Object.keys(r.answers).forEach((id) => usedIds.add(id));
           }
         });
@@ -77,14 +85,20 @@ router.get("/export", async (req, res) => {
 
       questionFields = relevantQuestions.map((q) => ({
         label: q.question_ro,
-        value: (row) => row.answers?.[q.id] ?? "",
+        value: (row) => {
+          const val = row.answers?.[q.id];
+          if (Array.isArray(val)) return val.join(", ");
+          return val ?? "";
+        },
       }));
 
       const fields = [
         ...baseFields.map((f) => ({
           label: f,
           value: (row) =>
-            f === "campanie" ? row.campanie?.name : f === "color" ? row.campanie?.color : row[f] ?? "",
+            f === "campanie" ? row.campanie?.name :
+            f === "color" ? row.campanie?.color :
+            row[f] ?? "",
         })),
         ...questionFields,
       ];
