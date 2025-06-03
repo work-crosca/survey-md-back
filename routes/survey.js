@@ -54,29 +54,41 @@ router.get("/export", async (req, res) => {
     if (dateStart) filter.completedAt.$gte = new Date(dateStart);
     if (dateEnd) filter.completedAt.$lte = new Date(dateEnd);
 
-    const responses = await SurveyResponse.find(filter).populate("campanie", "name color");
+    const responses = await SurveyResponse.find(filter).populate("campanie", "name color").lean();
 
     if (format === "csv") {
-      const baseFields = ["token", "lang", "completedAt", "userAgent", "campanie.name", "campanie.color"];
-      let dynamicFields = [];
+      const baseFields = ["token", "lang", "completedAt", "userAgent", "campanie", "color"];
+      let questionFields = [];
 
-      if (campaignDoc?.questions?.length) {
-        dynamicFields = campaignDoc.questions.map((id) => {
-          const q = allQuestions.find((q) => q.id === id);
-          return q ? `answers.${id}` : null;
-        }).filter(Boolean);
-      } else {
-        // fallback dacă nu e campanie sau nu are questions
-        const allKeys = new Set();
+      let relevantQuestions = campaignDoc?.questions?.length
+        ? allQuestions.filter((q) => campaignDoc.questions.includes(q.id))
+        : [];
+
+      if (!relevantQuestions.length) {
+        // fallback – detectăm toate întrebările folosite
+        const usedIds = new Set();
         responses.forEach((r) => {
-          if (r.answers && typeof r.answers === "object") {
-            Object.keys(r.answers).forEach((key) => allKeys.add(`answers.${key}`));
+          if (r.answers) {
+            Object.keys(r.answers).forEach((id) => usedIds.add(id));
           }
         });
-        dynamicFields = Array.from(allKeys);
+        relevantQuestions = allQuestions.filter((q) => usedIds.has(q.id));
       }
 
-      const fields = [...baseFields, ...dynamicFields];
+      questionFields = relevantQuestions.map((q) => ({
+        label: q.question_ro,
+        value: (row) => row.answers?.[q.id] ?? "",
+      }));
+
+      const fields = [
+        ...baseFields.map((f) => ({
+          label: f,
+          value: (row) =>
+            f === "campanie" ? row.campanie?.name : f === "color" ? row.campanie?.color : row[f] ?? "",
+        })),
+        ...questionFields,
+      ];
+
       const parser = new Parser({ fields });
       const csv = parser.parse(responses);
 
