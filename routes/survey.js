@@ -38,7 +38,14 @@ router.get("/export", async (req, res) => {
 
     const filter = {};
     if (lang) filter.lang = lang;
-    if (campaign) filter.campanie = campaign;
+    if (campaign) {
+      const found = await Campaign.findOne({ name: campaign });
+      if (found) {
+        filter.campanie = found._id;
+      } else {
+        return res.json([]);
+      }
+    }
     if (token) filter.token = { $regex: token, $options: "i" };
     if (dateStart || dateEnd) filter.completedAt = {};
     if (dateStart) filter.completedAt.$gte = new Date(dateStart);
