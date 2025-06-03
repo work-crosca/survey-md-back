@@ -162,4 +162,25 @@ router.get("/:id/questions", async (req, res) => {
   }
 });
 
+import allQuestions from "../utils/questions.js"; // import corect
+
+// [GET] întrebările campaniei după nume
+router.get("/name/:name/questions", async (req, res) => {
+  try {
+    const campanie = await Campaign.findOne({ name: req.params.name });
+    if (!campanie) {
+      return res.status(404).json({ error: "Campania nu a fost găsită" });
+    }
+
+    const selectedQuestions = allQuestions.filter((q) =>
+      campanie.questions.includes(q.id)
+    );
+
+    res.json(selectedQuestions);
+  } catch (err) {
+    console.error("Eroare la întrebări:", err);
+    res.status(500).json({ error: "Eroare server" });
+  }
+});
+
 export default router;
