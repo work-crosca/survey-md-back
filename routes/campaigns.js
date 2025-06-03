@@ -162,7 +162,6 @@ router.get("/:id/questions", async (req, res) => {
   }
 });
 
-import allQuestions from "../utils/questions.js"; // import corect
 
 // [GET] întrebările campaniei după nume
 router.get("/name/:name/questions", async (req, res) => {
