@@ -5,13 +5,24 @@ import { Parser } from "json2csv";
 const router = express.Router();
 
 // [POST] Trimite răspunsuri
+import Campaign from "../models/Campaign.js"; // asigură-te că e deja importat
+
 router.post("/submit", async (req, res) => {
   try {
-    const data = {
+    let data = {
       ...req.body,
       completedAt: new Date(),
       userAgent: req.headers["user-agent"],
     };
+
+    // Transformă campanie din nume în ObjectId
+    if (data.campanie && typeof data.campanie === "string") {
+      const found = await Campaign.findOne({ name: data.campanie });
+      if (!found) {
+        return res.status(400).json({ error: "Campania specificată nu există." });
+      }
+      data.campanie = found._id;
+    }
 
     const saved = await SurveyResponse.create(data);
     res.status(201).json({ message: "Response saved", id: saved._id });
@@ -20,7 +31,6 @@ router.post("/submit", async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
-
 // [GET] Export răspunsuri
 router.get("/export", async (req, res) => {
   try {
