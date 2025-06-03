@@ -1,12 +1,11 @@
 import express from "express";
 import SurveyResponse from "../models/SurveyResponse.js";
+import Campaign from "../models/Campaign.js";
 import { Parser } from "json2csv";
 
 const router = express.Router();
 
 // [POST] Trimite răspunsuri
-import Campaign from "../models/Campaign.js"; // asigură-te că e deja importat
-
 router.post("/submit", async (req, res) => {
   try {
     let data = {
@@ -31,6 +30,7 @@ router.post("/submit", async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
+
 // [GET] Export răspunsuri
 router.get("/export", async (req, res) => {
   try {
@@ -54,9 +54,23 @@ router.get("/export", async (req, res) => {
     const responses = await SurveyResponse.find(filter).populate("campanie", "name color");
 
     if (format === "csv") {
-      const fields = ["token", "lang", "completedAt", "userAgent", "answers", "campanie.name", "campanie.color"];
+      // câmpuri statice
+      const baseFields = ["token", "lang", "completedAt", "userAgent", "campanie.name", "campanie.color"];
+
+      // câmpuri dinamice din answers
+      const allKeys = new Set();
+      responses.forEach((r) => {
+        if (r.answers && typeof r.answers === "object") {
+          Object.keys(r.answers).forEach((key) => allKeys.add(`answers.${key}`));
+        }
+      });
+
+      const dynamicFields = Array.from(allKeys);
+      const fields = [...baseFields, ...dynamicFields];
+
       const parser = new Parser({ fields });
       const csv = parser.parse(responses);
+
       res.header("Content-Type", "text/csv");
       res.attachment("survey-responses.csv");
       return res.send(csv);
