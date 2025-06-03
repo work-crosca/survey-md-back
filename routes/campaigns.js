@@ -103,6 +103,20 @@ router.patch("/:id", async (req, res) => {
   }
 });
 
+
+// [GET] Campanie după nume
+router.get("/name/:name", async (req, res) => {
+  try {
+    const campanie = await Campaign.findOne({ name: req.params.name });
+    if (!campanie) {
+      return res.status(404).json({ error: "Campania nu a fost găsită" });
+    }
+    res.json(campanie);
+  } catch (err) {
+    console.error("Eroare la obținerea campaniei după nume:", err);
+    res.status(500).json({ error: "Eroare server" });
+  }
+});
 // [GET] Campanie după ID
 router.get("/:id", async (req, res) => {
   if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
@@ -117,20 +131,6 @@ router.get("/:id", async (req, res) => {
     res.json(campanie);
   } catch (err) {
     console.error("Eroare la obținerea campaniei după ID:", err);
-    res.status(500).json({ error: "Eroare server" });
-  }
-});
-
-// [GET] Campanie după nume
-router.get("/name/:name", async (req, res) => {
-  try {
-    const campanie = await Campaign.findOne({ name: req.params.name });
-    if (!campanie) {
-      return res.status(404).json({ error: "Campania nu a fost găsită" });
-    }
-    res.json(campanie);
-  } catch (err) {
-    console.error("Eroare la obținerea campaniei după nume:", err);
     res.status(500).json({ error: "Eroare server" });
   }
 });
