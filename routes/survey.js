@@ -108,7 +108,7 @@ router.get("/export", async (req, res) => {
 
       res.header("Content-Type", "text/csv");
       res.attachment("survey-responses.csv");
-      return res.send(csv);
+      return res.send("\uFEFF" + csv); 
     }
 
     res.json(responses);
