@@ -37,9 +37,8 @@ router.get("/me", requireAuth, (req, res) => {
 router.post("/logout", (req, res) => {
   res.clearCookie("token", {
     httpOnly: true,
-    secure: true,
+    secure: process.env.NODE_ENV === "production",
     sameSite: "None",
-    maxAge: 0,
   });
   res.json({ success: true });
 });
