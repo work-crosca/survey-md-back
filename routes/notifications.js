@@ -6,9 +6,14 @@ const router = express.Router();
 
 // ✅ Obține notificările pentru utilizatorul curent
 router.get("/", requireAuth, async (req, res) => {
-  const notifications = await Notification.find({ userId: req.user._id }).sort({ createdAt: -1 });
-  res.json(notifications);
-});
+   try {
+     const notifications = await Notification.find({ userId: req.user._id }).sort({ createdAt: -1 });
+     res.json(notifications);
+   } catch (err) {
+     console.error("Eroare la obținerea notificărilor:", err);
+     res.status(500).json({ error: "Eroare server" });
+   }
+ });
 
 // ✅ Marchează o notificare ca citită
 router.patch("/:id/read", requireAuth, async (req, res) => {

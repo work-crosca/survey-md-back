@@ -4,6 +4,7 @@ import Campaign from "../models/Campaign.js";
 import SurveyResponse from "../models/SurveyResponse.js";
 import allQuestions from "../utils/questions.js";
 import { sendNotification } from "../utils/sendNotification.js";
+import { requireAuth } from "../middleware/requireAuth.js";
 
 const router = express.Router();
 
@@ -34,7 +35,7 @@ router.get("/", async (req, res) => {
 });
 
 // [POST] Creare campanie
-router.post("/", async (req, res) => {
+router.post("/", requireAuth, async (req, res) => {
   try {
     const { name, description, active, color, questions } = req.body;
     if (!name || name.trim() === "") {
@@ -55,11 +56,15 @@ router.post("/", async (req, res) => {
     });
 
     await campaign.save();
-    await sendNotification({
-      userId: req.user._id,
-      title: "Campanie creată",
-      message: `Campania "${name}" a fost adăugată cu succes.`,
-    });
+
+    if (req.user?._id) {
+      await sendNotification({
+        userId: req.user._id,
+        title: "Campanie creată",
+        message: `Campania "${name}" a fost adăugată cu succes.`,
+      });
+    }
+
     res.status(201).json(campaign);
   } catch (err) {
     console.error("Eroare la crearea campaniei:", err);
@@ -68,7 +73,7 @@ router.post("/", async (req, res) => {
 });
 
 // [PATCH] Editare campanie
-router.patch("/:id", async (req, res) => {
+router.patch("/:id", requireAuth, async (req, res) => {
   try {
     const { name, description, active, color, questions } = req.body;
 
@@ -101,11 +106,15 @@ router.patch("/:id", async (req, res) => {
       },
       { new: true, runValidators: true }
     );
-    await sendNotification({
-      userId: req.user._id,
-      title: "Campanie modificată",
-      message: `Campania "${name}" a fost modificată cu succes.`,
-    });
+
+    if (req.user?._id) {
+      await sendNotification({
+        userId: req.user._id,
+        title: "Campanie modificată",
+        message: `Campania "${name}" a fost modificată cu succes.`,
+      });
+    }
+
     if (!updatedCampaign) {
       return res.status(404).json({ error: "Campania nu a fost găsită" });
     }
@@ -171,7 +180,6 @@ router.get("/:id/questions", async (req, res) => {
     res.status(500).json({ error: "Eroare server" });
   }
 });
-
 
 // [GET] întrebările campaniei după nume
 router.get("/name/:name/questions", async (req, res) => {
