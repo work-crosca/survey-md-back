@@ -23,7 +23,7 @@ router.post("/login", async (req, res) => {
     .cookie("token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "none", 
+      sameSite: "none",
       maxAge: 8 * 60 * 60 * 1000,
     })
     .json({ success: true });
@@ -41,6 +41,33 @@ router.post("/logout", (req, res) => {
     sameSite: "None",
   });
   res.json({ success: true });
+});
+
+// PATCH /update (actualizează propriul profil)
+router.patch("/update", requireAuth, async (req, res) => {
+  const { name, company, avatar, roles } = req.body;
+
+  try {
+    const updates = {};
+    if (name !== undefined) updates.name = name;
+    if (company !== undefined) updates.company = company;
+    if (avatar !== undefined) updates.avatar = avatar;
+
+    // Permitem update la roluri doar dacă userul curent are deja acest câmp
+    if (Array.isArray(roles) && req.user.roles?.includes("Admin")) {
+      updates.roles = roles;
+    }
+
+    const updated = await AdminUser.findByIdAndUpdate(req.user._id, updates, {
+      new: true,
+      runValidators: true,
+    });
+
+    res.json({ success: true, user: updated });
+  } catch (err) {
+    console.error("Update error:", err);
+    res.status(500).json({ error: "Eroare la actualizarea profilului" });
+  }
 });
 
 export default router;

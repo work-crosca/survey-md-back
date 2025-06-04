@@ -6,7 +6,12 @@ const AdminUserSchema = new mongoose.Schema({
   passwordHash: { type: String, required: true },
   name: { type: String, required: true },
   company: { type: String, required: true },
-  avatar: { type: String }, 
+  avatar: { type: String },
+
+  roles: {
+    type: [String],
+    default: ["Admin"], 
+  },
 });
 
 // Metodă pentru validare parolă
