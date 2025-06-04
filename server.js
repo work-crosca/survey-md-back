@@ -7,6 +7,7 @@ import adminRoutes from "./routes/admin.js";
 import campaignsRoutes from "./routes/campaigns.js";
 import questionsRoutes from "./routes/questions.js";
 import cookieParser from "cookie-parser";
+import notificationRoutes from "./routes/notifications.js";
 dotenv.config();
 
 const app = express();
@@ -30,7 +31,8 @@ mongoose
   .connect(process.env.MONGO_URI)
   .then(() => console.log("MongoDB connected"))
   .catch((err) => console.error("MongoDB connection error:", err));
-
+  
+app.use("/api/notifications", notificationRoutes);
 app.use("/api/questions", questionsRoutes);
 app.use("/api/campaigns", campaignsRoutes);
 app.use("/api/survey", surveyRoutes);

@@ -2,6 +2,7 @@ import express from "express";
 import AdminUser from "../models/AdminUser.js";
 import { createToken } from "../utils/jwt.js";
 import { requireAuth } from "../middleware/requireAuth.js";
+import { sendNotification } from "../utils/sendNotification.js";
 
 const router = express.Router();
 
@@ -61,6 +62,11 @@ router.patch("/update", requireAuth, async (req, res) => {
     const updated = await AdminUser.findByIdAndUpdate(req.user._id, updates, {
       new: true,
       runValidators: true,
+    });
+    await sendNotification({
+      userId: user._id,
+      title: "Profil actualizat",
+      message: "Profilul tău a fost actualizat cu succes.",
     });
 
     res.json({ success: true, user: updated });
