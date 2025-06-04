@@ -57,8 +57,8 @@ router.post("/", async (req, res) => {
     await campaign.save();
     await sendNotification({
       userId: req.user._id,
-      title: editId ? "Campanie modificată" : "Campanie creată",
-      message: `Campania "${name}" a fost ${editId ? "modificată" : "adăugată"} cu succes.`,
+      title: "Campanie creată",
+      message: `Campania "${name}" a fost adăugată cu succes.`,
     });
     res.status(201).json(campaign);
   } catch (err) {
@@ -103,8 +103,8 @@ router.patch("/:id", async (req, res) => {
     );
     await sendNotification({
       userId: req.user._id,
-      title: editId ? "Campanie modificată" : "Campanie creată",
-      message: `Campania "${name}" a fost ${editId ? "modificată" : "adăugată"} cu succes.`,
+      title: "Campanie modificată",
+      message: `Campania "${name}" a fost modificată cu succes.`,
     });
     if (!updatedCampaign) {
       return res.status(404).json({ error: "Campania nu a fost găsită" });
