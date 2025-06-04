@@ -64,7 +64,7 @@ router.patch("/update", requireAuth, async (req, res) => {
       runValidators: true,
     });
     await sendNotification({
-      userId: user._id,
+      userId: req.user._id,
       title: "Profil actualizat",
       message: "Profilul tău a fost actualizat cu succes.",
     });
