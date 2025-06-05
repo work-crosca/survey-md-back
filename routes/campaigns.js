@@ -62,7 +62,8 @@ router.post("/", requireAuth, async (req, res) => {
         userId: req.user._id,
         title: "Campanie creată",
         message: `Campania "${name}" a fost adăugată cu succes.`,
-      });
+      }, 
+      req.app.get("io")); 
     }
 
     res.status(201).json(campaign);
@@ -112,7 +113,8 @@ router.patch("/:id", requireAuth, async (req, res) => {
         userId: req.user._id,
         title: "Campanie modificată",
         message: `Campania "${name}" a fost modificată cu succes.`,
-      });
+      },
+      req.app.get("io")); 
     }
 
     if (!updatedCampaign) {

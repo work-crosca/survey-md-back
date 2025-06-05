@@ -8,15 +8,32 @@ import campaignsRoutes from "./routes/campaigns.js";
 import questionsRoutes from "./routes/questions.js";
 import cookieParser from "cookie-parser";
 import notificationRoutes from "./routes/notifications.js";
+
+import { Server } from "socket.io";
+import registerNotificationSocket from "./sockets/notificationSocket.js";
+
 dotenv.config();
 
 const app = express();
+const server = http.createServer(app); 
 
 const allowedOrigins = ["https://survey.getcookie.xyz", "http://localhost:5173"];
 
+const io = new Server(server, {
+  cors: {
+    origin: allowedOrigins,
+    credentials: true,
+  },
+});
+
+// Inițializează sockets
+registerNotificationSocket(io);
+app.set("io", io);
+global.ioInstance = io;
+
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin) return callback(null, true); // permite cererile fără origin (ex: Postman)
+    if (!origin) return callback(null, true);
     if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
@@ -39,6 +56,6 @@ app.use("/api/survey", surveyRoutes);
 app.use("/api/admin", adminRoutes);
 
 const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
