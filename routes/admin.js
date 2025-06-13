@@ -16,14 +16,14 @@ router.post("/login", async (req, res) => {
   }
 
   const token = createToken(user);
-
+/*
   res.setHeader("Access-Control-Allow-Origin", "https://survey.getcookie.xyz");
-  res.setHeader("Access-Control-Allow-Credentials", "true");
+  res.setHeader("Access-Control-Allow-Credentials", "true");*/
 
   res
     .cookie("token", token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: true,
       sameSite: "none",
       maxAge: 8 * 60 * 60 * 1000,
     })
